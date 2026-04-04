@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FastLivr — Portail Onboarding Partenaires</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --purple:#7C3AED;--purple-d:#5B21B6;--purple-l:#8B5CF6;--purple-xl:#EDE9FE;
@@ -422,7 +422,9 @@ textarea.inp{resize:vertical;min-height:70px}
 <button class="mob-btn" onclick="document.getElementById('sb').classList.toggle('open')">☰</button>
 
 <script>
-const{createClient}=supabase;
+// Wait for supabase to load
+let _sbLoaded = typeof supabase !== 'undefined';
+const{createClient} = _sbLoaded ? supabase : {};
 let db=null,S={companies:[]},_gc=0,_rc=0,currentPage='dashboard';
 
 // CITIES & DISTANCES
@@ -441,9 +443,13 @@ async function connect(){
   err.classList.remove('show');
   if(!url||!key){err.textContent='Veuillez remplir les deux champs.';err.classList.add('show');return;}
   if(!url.startsWith('https://')){err.textContent="L'URL doit commencer par https://";err.classList.add('show');return;}
+  if(typeof supabase === 'undefined' || !supabase.createClient){
+    err.textContent='Erreur : la librairie Supabase ne s'est pas chargée. Vérifiez votre connexion internet et rechargez la page.';
+    err.classList.add('show');return;
+  }
   btn.disabled=true;txt.innerHTML='<div class="spinner-sm"></div>';
   try{
-    db=createClient(url,key);
+    db=supabase.createClient(url,key);
     const{error}=await db.from('companies').select('id').limit(1);
     if(error)throw error;
     localStorage.setItem('fl_url',url);localStorage.setItem('fl_key',key);
@@ -829,11 +835,11 @@ function exportExcel(){
 }
 
 // INIT
-(async()=>{
+window.addEventListener('load', async function(){
   const url=localStorage.getItem('fl_url');
   const key=localStorage.getItem('fl_key');
   if(url&&key){document.getElementById('cfg-url').value=url;document.getElementById('cfg-key').value=key;await connect();}
-})();
+});
 </script>
 </body>
 </html>
